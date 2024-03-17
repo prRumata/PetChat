@@ -27,7 +27,7 @@ int Start(int& server_socket, sockaddr_in& server_addr) {
     server_addr.sin_port = htons(port);
     server_addr.sin_addr.s_addr = INADDR_ANY;
 
-    // // Вывод информации о порте и адресе
+    // Вывод информации о порте и адресе
     // std::cout << "Port: " << ntohs(server_addr.sin_port) << std::endl
     //           << "Address: " << inet_ntoa(server_addr.sin_addr) << std::endl;
 
