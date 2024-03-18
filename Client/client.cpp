@@ -32,7 +32,7 @@ int Start(int& client_socket, sockaddr_in& server_addr) {
         return 1;
     }
 
-    // // Вывод информации о порте и адресе
+    // Вывод информации о порте и адресе
     // std::cout << "Port: " << ntohs(server_addr.sin_port) << std::endl
     //           << "Address: " << inet_ntoa(server_addr.sin_addr) << std::endl;
 
