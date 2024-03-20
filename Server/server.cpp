@@ -100,7 +100,7 @@ int main() {
             std::cout << clients[i].name << ": " 
                     << std::string(buffer, bytes_received) << std::endl;
         }
-        std::cout << ".\n";
+        std::cout << "\n";
     }
 
     for (int i = 0; i != clients.size(); ++i) {
