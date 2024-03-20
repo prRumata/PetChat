@@ -4,6 +4,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <limits>
 
 
 int Start(int& client_socket, sockaddr_in& server_addr) {
@@ -18,15 +19,16 @@ int Start(int& client_socket, sockaddr_in& server_addr) {
     std::string name;
 
     std::cout << "Name: ";
-    std::cin >> name;
+    std::getline(std::cin, name);
     std::cout << "Port: ";
     std::cin >> port;
     std::cout << "IP: ";
     std::cin >> ip;
-    
+
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(port); // Порт 12345
+    server_addr.sin_port = htons(port);
     if (inet_pton(AF_INET, ip, &server_addr.sin_addr) != 1) {
         std::cerr << "Error: Incorrect IP address\n";
         return 1;

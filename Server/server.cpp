@@ -5,12 +5,31 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <thread>
 
 class Client {
 public:
     std::string name;
     int socket;
 };
+
+int HandleClient(Client client) {
+    char buffer[1024];
+    while (true) {
+        int bytes_received = recv(client.socket, buffer, sizeof(buffer), 0);
+            if (bytes_received == -1) {
+                std::cerr << "Error: Failed to receive data\n";
+                break;
+            } else if (bytes_received == 0) {
+                std::cout << client.name << " disconnected\n";
+                break;
+            }
+            std::cout << client.name << ": " << std::string(buffer, bytes_received)
+                      << std::endl;
+    }
+    close(client.socket);
+    return 0;
+}
 
 int Start(int& server_socket, sockaddr_in& server_addr) {
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -22,6 +41,8 @@ int Start(int& server_socket, sockaddr_in& server_addr) {
     uint16_t port;
     std::cout << "Port: ";
     std::cin >> port;
+
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(port);
@@ -70,6 +91,9 @@ int Connect(std::vector<Client>& clients, int& server_socket) {
     clients[i].name = buffer;
 
     std::cout << clients[i].name << " connected!\n";
+
+    std::thread client_thread(HandleClient, clients[i]);
+    client_thread.detach();
     return 0;
 }
 
@@ -87,20 +111,9 @@ int main() {
     }
     
     while (true) {
-        char buffer[1024];
-        for (int i = 0; i != clients.size(); ++i) {
-            int bytes_received = recv(clients[i].socket, buffer, sizeof(buffer), 0);
-            if (bytes_received == -1) {
-                std::cerr << "Error: Failed to receive data\n";
-                break;
-            } else if (bytes_received == 0) {
-                std::cout << clients[i].name << " disconnected\n";
-                break;
-            }
-            std::cout << clients[i].name << ": " 
-                    << std::string(buffer, bytes_received) << std::endl;
+        if (Connect(clients, server_socket) == 1) {
+            return 1;
         }
-        std::cout << "\n";
     }
 
     for (int i = 0; i != clients.size(); ++i) {
