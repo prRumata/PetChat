@@ -2,11 +2,14 @@
 #include <cstring>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
 #include <unistd.h>
-#include <limits>
+#include <arpa/inet.h>
+#include <thread>
 
 
+const int MESSAGE_SIZE = 1024;
+
+// Инициализация клиентского сокета и подключение его к серверу
 int Start(int& client_socket, sockaddr_in& server_addr) {
     client_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (client_socket == -1) {
@@ -19,7 +22,7 @@ int Start(int& client_socket, sockaddr_in& server_addr) {
     std::string name;
 
     std::cout << "Name: ";
-    std::getline(std::cin, name);
+    std::cin >> name;
     std::cout << "Port: ";
     std::cin >> port;
     std::cout << "IP: ";
@@ -41,6 +44,7 @@ int Start(int& client_socket, sockaddr_in& server_addr) {
 
     if (connect(client_socket, (sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
         std::cerr << "Error: Failed to connect to server\n";
+        close(client_socket);
         return 1;
     }
 
@@ -54,14 +58,7 @@ int Start(int& client_socket, sockaddr_in& server_addr) {
     return 0;
 }
 
-int main() {
-    int client_socket;
-    sockaddr_in server_addr;
-    
-    if (Start(client_socket, server_addr) == 1) {
-        return 1;
-    }
-
+void SendMessage(int client_socket) {
     while (true) {
         std::string message;
         std::getline(std::cin, message);
@@ -72,8 +69,41 @@ int main() {
             break;
         }
     }
-
     close(client_socket);
+    std::exit(0);
+}
+
+void GetMessage(int client_socket) {
+    char buffer[MESSAGE_SIZE];
+    while (true) {
+        int bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
+        if (bytes_received == -1) {
+            std::cerr << "Error: Failed to receive data\n";
+            break;
+        } else if (bytes_received == 0) {
+            std::cout << "Server disconnected\n";
+            break;
+        }
+        std::cout << std::string(buffer, bytes_received) << std::endl;
+    }
+    close(client_socket);
+    exit(0);
+}
+
+int main() {
+    int client_socket;
+    sockaddr_in server_addr;
+    std::string name;
+    
+    if (Start(client_socket, server_addr) == 1) {
+        return 1;
+    }
+
+    std::thread send_thread(SendMessage, client_socket);
+    std::thread recv_thread(GetMessage, client_socket);
+    
+    send_thread.join();
+    recv_thread.join();
 
     return 0;
 }
