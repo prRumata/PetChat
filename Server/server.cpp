@@ -72,7 +72,6 @@ int Start(int& server_socket, sockaddr_in& server_addr) {
     // std::cout << "Port: " << ntohs(server_addr.sin_port) << std::endl
     //           << "Address: " << inet_ntoa(server_addr.sin_addr) << std::endl;
 
-
     if (bind(server_socket, (sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
         std::cerr << "Error: Failed to bind socket\n";
         return 1;
@@ -84,8 +83,6 @@ int Start(int& server_socket, sockaddr_in& server_addr) {
         std::cerr << "Error: Failed to listen on socket\n";
         return 1;
     }
-
-
 
     std::cout << "Server started. Waiting for connections...\n";
     return 0;

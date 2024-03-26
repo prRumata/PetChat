@@ -23,11 +23,11 @@ int Start(int& client_socket, sockaddr_in& server_addr) {
 
     std::cout << "Name: ";
     std::cin >> name;
-    std::cout << "Port: ";
-    std::cin >> port;
     std::cout << "IP: ";
     std::cin >> ip;
-
+    std::cout << "Port: ";
+    std::cin >> port;
+    
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
     server_addr.sin_family = AF_INET;
