@@ -1,3 +1,3 @@
 all:
-	g++ ./src/Server/server.cpp -o bin/server
-	g++ ./src/Client/client.cpp -o bin/client
+	clang++ src/Server/Main.cpp src/Server/Server.cpp -o bin/Server
+	clang++ src/Client/Main.cpp src/Client/Client.cpp -o bin/Client
