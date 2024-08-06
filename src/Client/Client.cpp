@@ -32,6 +32,7 @@ void Client::init()
     if (_socket == -1)
     {
         std::cerr << "Error: Failed to create socket.\n";
+        std::cerr << std::strerror(errno) << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -40,12 +41,14 @@ void Client::init()
     if (inet_pton(AF_INET, _ip, &_address.sin_addr) < 1)
     {
         std::cerr << "Error: Incorect IP address.\n";
+        std::cerr << std::strerror(errno) << std::endl;
         exit(EXIT_FAILURE);
     }
 
     if (connect(_socket, (sockaddr *)&_address, _address_size) == -1)
     {
         std::cerr << "Error: Faild to connect to server.\n";
+        std::cerr << std::strerror(errno) << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -64,6 +67,7 @@ void Client::waiting()
     if (poll_return == -1)
     {
         std::cerr << "Error: Poll.\n";
+        std::cerr << std::strerror(errno) << std::endl;
         exit(EXIT_FAILURE);
     }
 }
@@ -71,36 +75,37 @@ void Client::waiting()
 
 void Client::get_message()
 {
-    ssize_t message_size;
+    ssize_t message_length;
     if (_file_descriptors[0].revents & POLLIN)
     {
-        message_size = read(_file_descriptors[0].fd, _message, kMaxMessageLength);
-        if (message_size == -1)
+        message_length = read(_file_descriptors[0].fd, _message, kMaxMessageLength + 1);
+        if (message_length == -1)
         {
             std::cerr << "ERROR: Failed to reading from server.\n";
+            std::cerr << std::strerror(errno) << std::endl;
         }
-        else if (message_size == 0)
+        else if (message_length == 0)
         {
             std::cout << "Server disconnected.\n";
             close(_file_descriptors[0].fd);
             exit(EXIT_FAILURE);
         }
         else {
-            std::cout << _message;
+            std::cout << "Message: " << _message << std::endl;
         }
     }
 }
 
 void Client::send_message()
 {
-    ssize_t message_lenght;
+    ssize_t message_length;
     if (_file_descriptors[1].revents & POLLIN)
     {
-        message_lenght = read(_file_descriptors[1].fd, _message, kMaxMessageLength);
-        if (message_lenght > 0)
+        message_length = read(_file_descriptors[1].fd, _message, kMaxMessageLength);
+        if (message_length > 0)
         {
-            _message[kMaxMessageLength] = '\0';
-            write(_file_descriptors[0].fd, _message, message_lenght);
+            if (_message[0] == '\n') return;
+            write(_file_descriptors[0].fd, _message, message_length);
         }
     }
 }

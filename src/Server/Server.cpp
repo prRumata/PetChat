@@ -1,4 +1,5 @@
 #include "Server.h"
+#include <unistd.h>
 
 Server::Server(int port)
 {
@@ -7,7 +8,10 @@ Server::Server(int port)
 
 Server::~Server()
 {
-    close(_socket);
+    for (int i = 0; i < _file_descriptors_size; ++i)
+    {
+        close(_file_descriptors[i].fd);
+    }
 }
 
 void Server::start()
@@ -29,6 +33,7 @@ void Server::init()
     if (_socket == -1)
     {
         std::cerr << "Error: Failed to create socket.\n";
+        std::cerr << std::strerror(errno) << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -39,12 +44,14 @@ void Server::init()
     if (bind(_socket, (sockaddr*)&_address, _address_size) == -1)
     {
         std::cerr << "Error: Failed to bind socket.\n";
+        std::cerr << std::strerror(errno) << std::endl;
         exit(EXIT_FAILURE);
     }
 
     if (listen(_socket, 5) == -1)
     {
         std::cerr << "Error: Failed to listen socket.\n";
+        std::cerr << std::strerror(errno) << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -70,6 +77,7 @@ void Server::waiting()
     if (poll_return == -1)
     {
         std::cerr << "Error: Poll.\n";
+        std::cerr << std::strerror(errno) << std::endl;
         exit(EXIT_FAILURE);
     }
 }
@@ -83,12 +91,14 @@ void Server::new_connections()
         if (client_socket == -1)
         {
             std::cerr << "Error: Failed to accept\n";
+            std::cerr << std::strerror(errno) << std::endl;
             return;
         }
 
         if (_file_descriptors_size > kMaxClients)
         {
             std::cerr << "Error: Failed to accept. Server is full\n";
+            close(client_socket);
             return;
         }
 
@@ -109,6 +119,7 @@ void Server::get_message()
             if (message_length == -1)
             {
                 std::cerr << "ERROR: Failed to reading from socket.\n";
+                std::cerr << std::strerror(errno) << std::endl;
             }
             else if (message_length == 0)
             {
@@ -120,16 +131,19 @@ void Server::get_message()
             }
             else
             {
+                if (_message[message_length - 1] == '\n')
+                    --message_length;
+                if (message_length == 0) continue;
                 _message[message_length] = '\0';
-                send_message(_message);
+                std::cout << "Message: " << _message << std::endl;
+                send_message(_message, message_length + 1);
             }
         }
     }
 }
 
-void Server::send_message(char * message)
+void Server::send_message(char * message, size_t message_lenght)
 {
-    std::size_t message_lenght = std::strlen(message);
     for (int i = 1; i < _file_descriptors_size; ++i)
     {
         write(_file_descriptors[i].fd, message, message_lenght);

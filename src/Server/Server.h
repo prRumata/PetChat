@@ -22,7 +22,7 @@ private:
     void waiting();
     void new_connections();
     void get_message();
-    void send_message(char * message);
+    void send_message(char * message, size_t message_lenght);
 
     pollfd _file_descriptors[kMaxClients + 1];
     nfds_t _file_descriptors_size;
