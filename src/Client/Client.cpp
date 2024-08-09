@@ -27,6 +27,7 @@ void Client::start()
 
 void Client::init()
 {
+    std::cout << "Joining the server at " << _ip << ":" << _port << "...\n";
     _address_size = sizeof(sockaddr_in);
     _socket = socket(AF_INET, SOCK_STREAM, 0);
     if (_socket == -1)

@@ -90,14 +90,15 @@ void Server::new_connections()
         client_socket = accept(_socket, (sockaddr*)&_address, &_address_size);
         if (client_socket == -1)
         {
-            std::cerr << "Error: Failed to accept\n";
+            std::cerr << "Error: Failed to accept.\n";
             std::cerr << std::strerror(errno) << std::endl;
             return;
         }
 
         if (_file_descriptors_size > kMaxClients)
         {
-            std::cerr << "Error: Failed to accept. Server is full\n";
+            write(client_socket, "Failed to accept. Server is full.", 41);
+            std::cerr << "Error: Failed to accept. Server is full.\n";
             close(client_socket);
             return;
         }
@@ -105,6 +106,8 @@ void Server::new_connections()
         _file_descriptors[_file_descriptors_size].fd = client_socket;
         _file_descriptors[_file_descriptors_size].events = POLLIN;
         ++_file_descriptors_size;
+        send_message("New client connected!", 22);
+        std::cout << "New client connected!" << std::endl;
     }
 }
 
@@ -118,7 +121,7 @@ void Server::get_message()
             message_length = read(_file_descriptors[i].fd, _message, kMaxMessageLength);
             if (message_length == -1)
             {
-                std::cerr << "ERROR: Failed to reading from socket.\n";
+                std::cerr << "Error: Failed to reading from socket.\n";
                 std::cerr << std::strerror(errno) << std::endl;
             }
             else if (message_length == 0)
@@ -142,7 +145,7 @@ void Server::get_message()
     }
 }
 
-void Server::send_message(char * message, size_t message_lenght)
+const void Server::send_message(const char * message, size_t message_lenght)
 {
     for (int i = 1; i < _file_descriptors_size; ++i)
     {

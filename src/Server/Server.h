@@ -8,7 +8,7 @@
 #include <iostream>
 #include <cstring>
 
-const int kMaxClients = 128;
+const int kMaxClients = 2;
 const int kMaxMessageLength = 4096;
 
 class Server
@@ -22,7 +22,7 @@ private:
     void waiting();
     void new_connections();
     void get_message();
-    void send_message(char * message, size_t message_lenght);
+    const void send_message(const char * message, size_t message_lenght);
 
     pollfd _file_descriptors[kMaxClients + 1];
     nfds_t _file_descriptors_size;

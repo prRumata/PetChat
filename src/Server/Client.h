@@ -1,7 +1,7 @@
 #pragma once
 
 #include <sys/socket.h>
-#include <string>
+#include <cstring>
 #include <sys/poll.h>
 
 const int kClientNameSize = 32;
@@ -9,8 +9,9 @@ const int kClientNameSize = 32;
 class Client
 {
 public:
-    Client();
+    Client(const char * name);
     ~Client();
+    const char * GetName();
 private:
-    std::string _name;
+    char _name[kClientNameSize + 1];
 };
