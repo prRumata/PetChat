@@ -14,19 +14,19 @@ Server::~Server()
     }
 }
 
-void Server::start()
+void Server::Start()
 {
-    init();
+    Init();
 
     while(true)
     {
-        waiting();
-        new_connections();
-        get_message();
+        Waiting();
+        NewConnections();
+        GetMessage();
     }
 }
 
-void Server::init()
+void Server::Init()
 {
     _address_size = sizeof(sockaddr_in);
     _socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -59,6 +59,8 @@ void Server::init()
     _file_descriptors[0].fd = _socket;
     _file_descriptors[0].events = POLLIN;
 
+    _clients_size = 0;
+
     for (int i = 1; i <= kMaxClients; ++i)
     {
         _file_descriptors[i].fd = -1;
@@ -68,7 +70,7 @@ void Server::init()
               << "Waiting for connections...\n";
 }
 
-void Server::waiting()
+void Server::Waiting()
 {
     int poll_return;
 
@@ -82,7 +84,7 @@ void Server::waiting()
     }
 }
 
-void Server::new_connections()
+void Server::NewConnections()
 {
     int client_socket;
     if (_file_descriptors[0].revents & POLLIN)
@@ -106,49 +108,97 @@ void Server::new_connections()
         _file_descriptors[_file_descriptors_size].fd = client_socket;
         _file_descriptors[_file_descriptors_size].events = POLLIN;
         ++_file_descriptors_size;
-        send_message("New client connected!", 22);
-        std::cout << "New client connected!" << std::endl;
+
+        ++_clients_size;
     }
 }
 
-void Server::get_message()
+void Server::GetMessage()
 {
-    ssize_t message_length;
-    for (int i = 1; i < _file_descriptors_size; ++i)
+    
+    for (int i = 0; i < _clients_size; ++i)
     {
-        if (_file_descriptors[i].revents & POLLIN)
+        if (_file_descriptors[i + 1].revents & POLLIN)
         {
-            message_length = read(_file_descriptors[i].fd, _message, kMaxMessageLength);
-            if (message_length == -1)
+            if (_clients[i].IsReady())
             {
-                std::cerr << "Error: Failed to reading from socket.\n";
-                std::cerr << std::strerror(errno) << std::endl;
+                ssize_t message_length;
+                strcpy(_message, _clients[i].GetName());
+                strcat(_message, ": ");
+                message_length = read(_file_descriptors[i + 1].fd, _message + _clients[i].GetNameSize() + 2, kMaxMessageLength);
+                if (message_length == -1)
+                {
+                    std::cerr << "Error: Failed to reading from socket.\n";
+                    std::cerr << std::strerror(errno) << std::endl;
+                }
+                else if (message_length == 0)
+                {
+                    std::cout << "Client disconnected.\n";
+                    close(_file_descriptors[i + 1].fd);
+                    _file_descriptors[i + 1] = _file_descriptors[_file_descriptors_size - 1];
+                    _file_descriptors[_file_descriptors_size - 1].fd = -1;
+                    --_file_descriptors_size;
+
+                    _clients[i] = _clients[_clients_size - 1];
+                    _clients[_clients_size - 1].DeleteUser();
+                    --_clients_size;
+
+                    --i;
+                }
+                else
+                {
+                    message_length += _clients[i].GetNameSize() + 2;
+                    if (_message[message_length - 1] != '\n')
+                    {
+                        _message[message_length] = '\n';
+                        ++message_length;
+                    }    
+                    if (message_length == 0) continue;
+                    _message[message_length] = '\0';
+                    std::cout << _message;
+                    SendMessage(_clients[i], _message, message_length + 1);
+                }
             }
-            else if (message_length == 0)
-            {
-                std::cout << "Client disconnected.\n";
-                close(_file_descriptors[i].fd);
-                _file_descriptors[i] = _file_descriptors[_file_descriptors_size - 1];
-                --_file_descriptors_size;
-                --i;
-            }
+
             else
             {
-                if (_message[message_length - 1] == '\n')
-                    --message_length;
-                if (message_length == 0) continue;
-                _message[message_length] = '\0';
-                std::cout << "Message: " << _message << std::endl;
-                send_message(_message, message_length + 1);
+                ssize_t name_length;
+                name_length = read(_file_descriptors[i + 1].fd, _message, kClientNameSize);
+
+                if (name_length <= 0 || _message[0] == '\n')
+                {
+                    std::cerr << "Error: Failed to reading username from socket.\n";
+                    std::cerr << std::strerror(errno) << std::endl;
+                    close(_file_descriptors[i + 1].fd);
+
+                    _file_descriptors[i + 1] = _file_descriptors[_file_descriptors_size - 1];
+                    _file_descriptors[_file_descriptors_size - 1].fd = -1;
+                    --_file_descriptors_size;
+                    
+                    _clients[i] = _clients[_clients_size - 1];
+                    _clients[_clients_size - 1].DeleteUser();
+                    --_clients_size;
+
+                    --i;
+                }
+
+                if (_message[name_length - 1] == '\n')
+                    --name_length;
+                _message[name_length] = '\0';
+                _clients[i].SetName(_message);
+
+                std::cout << _clients[i].GetName() << " connected!" << std::endl;
             }
         }
     }
 }
 
-const void Server::send_message(const char * message, size_t message_lenght)
+const void Server::SendMessage(const Client & client, const char * message, size_t message_lenght) const
 {
-    for (int i = 1; i < _file_descriptors_size; ++i)
+    for (int i = 0; i < _clients_size; ++i)
     {
-        write(_file_descriptors[i].fd, message, message_lenght);
+        if (_clients[i].IsReady()) {
+            write(_file_descriptors[i + 1].fd, message, message_lenght);
+        }
     }
 }

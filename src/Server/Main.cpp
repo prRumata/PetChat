@@ -10,6 +10,6 @@ int main(int argc, char *argv[])
     }
 
     Server server(port);
-    server.start();
+    server.Start();
     return 0;
 }

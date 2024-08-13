@@ -10,6 +10,7 @@
 #include <iostream>
 
 const int kMaxMessageLength = 4096;
+const int kMaxClientNameSize = 16;
 
 class Client
 {
@@ -29,5 +30,5 @@ private:
     int _socket;
     int _port;
     char _ip[16];
-    char _message[kMaxMessageLength + 1];
+    char _message[kMaxMessageLength + kMaxClientNameSize + 4];
 };

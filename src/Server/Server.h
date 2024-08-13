@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Client.h"
 #include <cstdlib>
 #include <sys/socket.h>
 #include <sys/poll.h>
@@ -16,20 +17,21 @@ class Server
 public:
     Server(int port);
     ~Server();
-    void start();
+    void Start();
 private:
-    void init();
-    void waiting();
-    void new_connections();
-    void get_message();
-    const void send_message(const char * message, size_t message_lenght);
+    void Init();
+    void Waiting();
+    void NewConnections();
+    void GetMessage();
+    const void SendMessage(const Client & client, const char * message, size_t message_lenght) const;
 
+    Client _clients[kMaxClients];
+    size_t _clients_size;
     pollfd _file_descriptors[kMaxClients + 1];
     nfds_t _file_descriptors_size;
     sockaddr_in _address;
     socklen_t _address_size;
-    char _message[kMaxMessageLength + 1];
+    char _message[kMaxMessageLength + kClientNameSize + 4];
     int _socket;
     int _port;
-
 };

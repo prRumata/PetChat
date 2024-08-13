@@ -27,8 +27,12 @@ void Client::start()
 
 void Client::init()
 {
+    std::cout << "Enter your username (max " << kMaxClientNameSize << "): ";
+    std::cin >> _message;
+    _message[kMaxClientNameSize] = '\0';
     std::cout << "Joining the server at " << _ip << ":" << _port << "...\n";
     _address_size = sizeof(sockaddr_in);
+
     _socket = socket(AF_INET, SOCK_STREAM, 0);
     if (_socket == -1)
     {
@@ -37,6 +41,7 @@ void Client::init()
         exit(EXIT_FAILURE);
     }
 
+    
     _address.sin_family = AF_INET;
     _address.sin_port = htons(_port);
     if (inet_pton(AF_INET, _ip, &_address.sin_addr) < 1)
@@ -52,12 +57,14 @@ void Client::init()
         std::cerr << std::strerror(errno) << std::endl;
         exit(EXIT_FAILURE);
     }
-
+    
     _file_descriptors[0].fd = _socket;
     _file_descriptors[0].events = POLLIN;
 
     _file_descriptors[1].fd = STDIN_FILENO;
     _file_descriptors[1].events = POLLIN;
+
+    write(_file_descriptors[0].fd, _message, std::strlen(_message) + 1);
 }
 
 void Client::waiting()
@@ -92,7 +99,7 @@ void Client::get_message()
             exit(EXIT_FAILURE);
         }
         else {
-            std::cout << "Message: " << _message << std::endl;
+            std::cout << _message;
         }
     }
 }
